@@ -1,0 +1,17 @@
+[package]
+name = "veridian-manager"
+version = "0.1.0"
+edition = { workspace = true }
+
+[workspace]
+members = ["bundle-deploy"]
+
+[workspace.package]
+edition = "2024"
+
+[dependencies]
+bundle-deploy = { path = "bundle-deploy" }
+uuid = "1.18.0"
+directories = "6.0.0"
+sqlite = "0.37.0"
+toml = "0.9.5"
