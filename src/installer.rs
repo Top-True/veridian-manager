@@ -1,109 +1,98 @@
-use crate::application;
+use crate::{application, recorder};
 use std::path::PathBuf;
 
-pub struct RelativePath(Vec<String>);
+pub struct CreateDirectoryTask(PathBuf);
 
-impl RelativePath {
-    pub fn new(path: impl IntoIterator<Item = impl Into<String>>) -> Result<Self, ()> {
-        let mut components = Vec::new();
-
-        for item in path {
-            let s = item.into();
-
-            // 验证组件合法性
-            if s.is_empty() || s.contains('/') || s.contains('\\') {
-                return Err(());
-            }
-
-            // 处理 "." 组件（当前目录）
-            if s == "." {
-                continue; // 忽略当前目录引用
-            }
-
-            // 处理 ".." 组件（上级目录）
-            if s == ".." {
-                if let Some(last) = components.last() {
-                    if last != ".." {
-                        // 如果最后一个组件不是 ".."，则移除它（抵消）
-                        components.pop();
-                        continue;
-                    }
-                }
-                // 如果前面没有可以抵消的组件，则添加 ".."
-                components.push(s);
-                continue;
-            }
-
-            // 添加普通组件
-            components.push(s);
-        }
-
-        Ok(RelativePath(components))
+impl CreateDirectoryTask {
+    pub fn new(path: PathBuf) -> Self {
+        CreateDirectoryTask(path)
     }
 
-    pub fn resolve(&self, base_path: impl Into<PathBuf>) -> Result<PathBuf, ()> {
-        let mut path = base_path.into();
-
-        for component in &self.0 {
-            if component == "." {
-                // 当前目录，忽略
-                continue;
-            } else if component == ".." {
-                // 检查是否可以有上级目录
-                if path.parent().is_none() {
-                    return Err(());
-                }
-                path.pop();
-            } else {
-                path.push(component);
-            }
-        }
-
-        Ok(path)
+    pub fn path(&self) -> &PathBuf {
+        &self.0
     }
 }
 
-pub enum FileContent {
-    FromPath(PathBuf),
-    Contents(Vec<u8>),
+pub enum WriteFileTask {
+    FromPath { from: PathBuf, to: PathBuf },
+    Contents { content: Vec<u8>, to: PathBuf },
 }
 
-pub enum FileSystem {
-    File(RelativePath, FileContent),
-    Dir(RelativePath),
-}
-pub struct FSBundle {
-    base_path: PathBuf,
-    files: Vec<FileSystem>,
+pub enum LinkType {
+    Shortcut,
+    Symbolic,
+    Hard,
 }
 
-pub struct LinkTask {
+pub struct CreateLinkTask {
     from: PathBuf,
     to: PathBuf,
+    link_type: LinkType,
 }
 
 pub struct EnvTask {}
 
 pub struct Installer {
-    fs_tasks: Vec<FSBundle>,
-    link_tasks: Vec<LinkTask>,
+    dir_tasks: Vec<CreateDirectoryTask>,
+    file_tasks: Vec<WriteFileTask>,
+    link_tasks: Vec<CreateLinkTask>,
     env_tasks: Vec<EnvTask>,
 }
 
 impl Installer {
     pub fn new(
-        fs_tasks: Vec<FSBundle>,
-        link_tasks: Vec<LinkTask>,
+        dir_tasks: Vec<CreateDirectoryTask>,
+        file_tasks: Vec<WriteFileTask>,
+        link_tasks: Vec<CreateLinkTask>,
         env_tasks: Vec<EnvTask>,
     ) -> Self {
         Self {
-            fs_tasks,
+            dir_tasks,
+            file_tasks,
             link_tasks,
             env_tasks,
         }
     }
 
-    pub async fn install(self) -> application::Application {
-        todo!()
+    pub async fn install(self) -> InstallResult {
+        let mut recorder = recorder::Recorder::with_capacity(
+            self.dir_tasks.len(),
+            self.file_tasks.len(),
+            self.link_tasks.len(),
+            self.env_tasks.len(),
+        );
+        for task in self.dir_tasks {
+            let res = bundle_deploy::file_system::create_dir_all(task.path())
+                .await;
+            match res {
+                Ok(_) => recorder.record_directory(recorder::DirectoryRecord::from(task.path().clone())),
+                Err(_) => return Err((recorder, InstallErr::CreateDirectory(task.path().clone()))),
+            }
+        }
+        for task in self.file_tasks {
+            match task {
+                WriteFileTask::FromPath { from, to } => {
+                    bundle_deploy::file_system::copy(from, &to).await.unwrap(); // todo
+                    recorder.record_file(recorder::FileRecord::from(to));
+                }
+                WriteFileTask::Contents { content, to } => {
+                    bundle_deploy::file_system::write(&to, content)
+                        .await
+                        .unwrap(); // todo
+                    recorder.record_file(recorder::FileRecord::from(to));
+                }
+            }
+        }
+        // todo!()
+        Ok(application::Application::from(recorder))
     }
 }
+
+pub enum InstallErr {
+    CreateDirectory(PathBuf),
+    WriteFile,
+    CreateLink,
+    Env,
+}
+
+pub type InstallResult = Result<application::Application, (recorder::Recorder, InstallErr)>;

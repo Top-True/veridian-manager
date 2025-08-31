@@ -11,7 +11,9 @@ edition = "2024"
 
 [dependencies]
 bundle-deploy = { path = "bundle-deploy" }
-uuid = "1.18.0"
+uuid = { version = "1.18.0", features = ["v4"] }
 directories = "6.0.0"
 sqlite = "0.37.0"
 toml = "0.9.5"
+rhai = "1.22.2"
+tokio = { version = "1.47.1", features = ["rt", "macros", "rt-multi-thread"] }
