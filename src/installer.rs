@@ -1,6 +1,7 @@
 use crate::{application, recorder};
 use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct CreateDirectoryTask(PathBuf);
 
 impl CreateDirectoryTask {
@@ -13,23 +14,27 @@ impl CreateDirectoryTask {
     }
 }
 
+#[derive(Debug)]
 pub enum WriteFileTask {
     FromPath { from: PathBuf, to: PathBuf },
     Contents { content: Vec<u8>, to: PathBuf },
 }
 
+#[derive(Debug)]
 pub enum LinkType {
     Shortcut,
     Symbolic,
     Hard,
 }
 
+#[derive(Debug)]
 pub struct CreateLinkTask {
     from: PathBuf,
     to: PathBuf,
     link_type: LinkType,
 }
 
+#[derive(Debug)]
 pub struct EnvTask {}
 
 pub struct Installer {

@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 static CONFIG_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
+static DATABASE_CONNECTION: OnceLock<sqlite::ConnectionThreadSafe> = OnceLock::new();
 
-pub fn get_config_file_path() -> &'static PathBuf {
+pub fn get_config_path() -> &'static PathBuf {
     CONFIG_FILE_PATH.get_or_init(|| {
         if let Some(p) = directories::ProjectDirs::from("top.equaltrue", "", "Veridian Manager") {
             p.config_dir().to_path_buf()
@@ -24,20 +25,16 @@ pub fn get_default_toml_config() -> String {
     )
 }
 
+pub fn get_database_connection() -> &'static sqlite::ConnectionThreadSafe {
+    DATABASE_CONNECTION.get_or_init(|| {
+        sqlite::Connection::open_thread_safe(PathBuf::from(get_config_path()).join("db.sqlite")).unwrap()
+    })
+}
+
 pub struct Config {
     pub profiles: HashMap<String, Profile>,
 }
 
 pub struct Profile {
     pub default_install_path: PathBuf,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::config::get_default_toml_config;
-
-    #[test]
-    fn default_toml_config() {
-        println!("{}", get_default_toml_config());
-    }
 }
