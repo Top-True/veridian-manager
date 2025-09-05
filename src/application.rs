@@ -7,14 +7,22 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn from_database(id: Uuid) -> Self {
-        todo!()
+    pub fn new(id: Uuid, recorder: recorder::Recorder) -> Self {
+        Self { id, recorder }
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn recorder(&self) -> &recorder::Recorder {
+        &self.recorder
     }
 }
 
 impl From<recorder::Recorder> for Application {
     fn from(recorder: recorder::Recorder) -> Self {
         let id = Uuid::new_v4();
-        Application { id, recorder }
+        Self { id, recorder }
     }
 }

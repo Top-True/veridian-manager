@@ -1,5 +1,0 @@
-[profiles.global]
-default-install-path = "{default_global_install_path}"
-
-[profiles.personal]
-default-install-path = "{default_personal_install_path}"

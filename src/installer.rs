@@ -67,10 +67,11 @@ impl Installer {
             self.env_tasks.len(),
         );
         for task in self.dir_tasks {
-            let res = bundle_deploy::file_system::create_dir_all(task.path())
-                .await;
+            let res = bundle_deploy::file_system::create_dir_all(task.path()).await;
             match res {
-                Ok(_) => recorder.record_directory(recorder::DirectoryRecord::from(task.path().clone())),
+                Ok(_) => {
+                    recorder.record_directory(recorder::DirectoryRecord::from(task.path().clone()))
+                }
                 Err(_) => return Err((recorder, InstallErr::CreateDirectory(task.path().clone()))),
             }
         }
@@ -93,11 +94,20 @@ impl Installer {
     }
 }
 
+#[derive(Debug)]
 pub enum InstallErr {
     CreateDirectory(PathBuf),
     WriteFile,
     CreateLink,
     Env,
 }
+
+impl std::fmt::Display for InstallErr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self))
+    }
+}
+
+impl std::error::Error for InstallErr {}
 
 pub type InstallResult = Result<application::Application, (recorder::Recorder, InstallErr)>;

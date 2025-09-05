@@ -1,7 +1,7 @@
 use crate::installer;
 use bundle_deploy::file_system::{FileName, RelativePath};
 use std::collections::VecDeque;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::PathBuf;
 
@@ -97,6 +97,14 @@ pub enum SourceResolveErr {
     ReadDirErr(std::io::Error),
 }
 
+impl Display for SourceResolveErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self))
+    }
+}
+
+impl std::error::Error for SourceResolveErr {}
+
 pub type SourceResolveResult = Result<SourceResolveOK, SourceResolveErr>;
 
 pub struct InstallerBuilder {
@@ -140,9 +148,19 @@ impl InstallerBuilder {
     }
 }
 
+#[derive(Debug)]
 pub enum BuildError {
     PatternError(glob::PatternError),
     GlobError(glob::GlobError),
     SourceError(SourceResolveErr),
 }
+
+impl Display for BuildError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self))
+    }
+}
+
+impl std::error::Error for BuildError {}
+
 pub type BuildResult = Result<installer::Installer, BuildError>;

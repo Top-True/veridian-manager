@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+#[derive(Serialize, Deserialize)]
 pub struct DirectoryRecord(PathBuf);
 
 impl From<PathBuf> for DirectoryRecord {
@@ -8,6 +10,7 @@ impl From<PathBuf> for DirectoryRecord {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct FileRecord(PathBuf);
 
 impl From<PathBuf> for FileRecord {
@@ -16,6 +19,7 @@ impl From<PathBuf> for FileRecord {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct LinkRecord(PathBuf);
 
 impl From<PathBuf> for LinkRecord {
@@ -24,8 +28,10 @@ impl From<PathBuf> for LinkRecord {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct EnvRecord {}
 
+#[derive(Serialize, Deserialize)]
 pub struct Recorder {
     dir_tasks: Vec<DirectoryRecord>,
     file_tasks: Vec<FileRecord>,
@@ -58,9 +64,23 @@ impl Recorder {
     pub fn record_env(&mut self, record: EnvRecord) {
         self.env_tasks.push(record);
     }
+}
 
+impl Recorder {
     pub async fn rollback(self) -> Result<(), ()> {
         todo!()
+    }
+}
+
+impl Recorder {
+    pub fn to_binary(&self) -> Vec<u8> {
+        bincode::serde::encode_to_vec(self, bincode::config::standard()).unwrap()
+    }
+
+    pub fn from_binary(data: &[u8]) -> Self {
+        bincode::serde::decode_from_slice(data, bincode::config::standard())
+            .unwrap()
+            .0
     }
 }
 
