@@ -1,15 +1,19 @@
 use crate::installer;
 use bundle_deploy::file_system::{FileName, RelativePath};
+use rhai::CustomType;
+use rhai::TypeBuilder;
 use std::collections::VecDeque;
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::PathBuf;
 
+#[derive(Debug, Clone)]
 pub enum SourcePath {
     Disk(PathBuf, glob::Pattern),
     Archive(PathBuf, RelativePath, glob::Pattern),
 }
 
+#[derive(Debug, Clone)]
 pub struct Source {
     pub path: SourcePath,
     pub destination: PathBuf,
@@ -107,6 +111,7 @@ impl std::error::Error for SourceResolveErr {}
 
 pub type SourceResolveResult = Result<SourceResolveOK, SourceResolveErr>;
 
+#[derive(CustomType, Clone, Debug)]
 pub struct InstallerBuilder {
     sources: Vec<Source>,
     dir_sources: Vec<PathBuf>,

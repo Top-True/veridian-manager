@@ -53,6 +53,7 @@ impl Into<OsString> for FileName {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum RelativePathComponent {
     Super,
     Component(FileName),
@@ -64,6 +65,7 @@ impl From<FileName> for RelativePathComponent {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct RelativePath(Vec<RelativePathComponent>);
 
 impl RelativePath {
